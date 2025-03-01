@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import plotly.express as px
 
 st.set_page_config(layout="wide")
 
@@ -36,21 +37,70 @@ df_encoded = pd.get_dummies(df, columns=['Gender', 'Occupation', 'BMI Category',
 corr_matrix = df_encoded.corr()
 
 
-
-# show the data in a table
-if st.sidebar.checkbox('Show dataframe'):
-    st.write(df)
-
-
 # Radio Group
 view_option = st.sidebar.radio(
     "Select what you want to view:",
-    ["View filtered data", "Check correlation by variable", "Linear regression analysis"]
+    ["Dataset analysis", "View filtered data", "Check correlation by variable", "Linear regression analysis"]
 )
 
-if view_option == "View filtered data":
 
-    numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, default=[])
+if view_option == "Dataset analysis":
+    st.write("## Dataset Analysis")
+    if st.checkbox('Show dataframe'):
+        st.write(df)
+
+    col1, col2 = st.columns(2) 
+
+    with col1:
+        chart1 = alt.Chart(df).mark_bar().encode(
+            x="Gender:N", 
+            y="count():Q",
+            color="Gender:N"
+        ).properties(width=300, height=320, title='Gender Distribution') 
+        st.altair_chart(chart1)
+
+        chart2 = alt.Chart(df).mark_bar().encode(
+            x="Occupation:N", 
+            y="count():Q",
+            color="Occupation:N"
+        ).properties(width=300, height=320, title='Occupation Distribution')
+        st.altair_chart(chart2)
+
+        chart3 = alt.Chart(df).mark_bar().encode(
+            x="BMI Category:N", 
+            y="count():Q",
+            color="BMI Category:N"
+        ).properties(width=300, height=320, title='BMI Category Distribution')
+        st.altair_chart(chart3)
+
+        chart4 = alt.Chart(df).mark_bar().encode(
+            x="Sleep Disorder:N", 
+            y="count():Q",
+            color="Sleep Disorder:N"
+        ).properties(width=300, height=320, title='Sleep Disorder Distribution')
+        st.altair_chart(chart4)
+
+    with col2:
+        fig1 = px.pie(df, names='Gender')
+        fig1.update_layout(height=320)
+        st.plotly_chart(fig1)
+
+        fig2 = px.pie(df, names='Occupation')
+        fig2.update_layout(height=320)
+        st.plotly_chart(fig2)
+
+        fig3 = px.pie(df, names='BMI Category')
+        fig3.update_layout(height=320)
+        st.plotly_chart(fig3)
+
+        fig4 = px.pie(df, names='Sleep Disorder')
+        fig4.update_layout(height=320)
+        st.plotly_chart(fig4)
+
+elif view_option == "View filtered data":
+    st.write("## View Filtered Data")
+
+    numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, numeric_cols[0])
     filter_by_option = st.selectbox('How would you like to group the data?', filter_cols)
     st.write("###")
 
@@ -151,6 +201,7 @@ if view_option == "View filtered data":
     
 
 elif view_option == "Check correlation by variable":
+    st.write("## Check Correlation by Variable")
 
     st.write("### Correlation Matrix Heatmap")
 
@@ -171,6 +222,7 @@ elif view_option == "Check correlation by variable":
 
 elif view_option == "Linear regression analysis":
 
+    st.write("## Linear Regression Analysis")
     st.write("Work in progress")
 
 else:
