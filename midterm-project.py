@@ -31,11 +31,13 @@ numeric_cols = [
 numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, numeric_cols[0])
 
 categorical_cols = ['BMI Category', 'Sleep Disorder']
-st.write("Which factors would you like to view? (Categorical Values)")
-selected_categories = []
-for category in categorical_cols:
-    if st.checkbox(category, value=False): 
-        selected_categories.append(category)
+order_dict = {"BMI Category": ["Underweight", "Normal", "Overweight", "Obese"],
+                "Sleep Disorder": ["None", "Sleep Apnea", "Insomnia"]}
+# st.write("Which factors would you like to view? (Categorical Values)")
+# selected_categories = []
+# for category in categorical_cols:
+#     if st.checkbox(category, value=False): 
+#         selected_categories.append(category)
 
 # show the data in a table
 if st.sidebar.checkbox('Show dataframe'):
@@ -50,16 +52,29 @@ if filter_by == "Gender":
     
     df_melted = df_gender.reset_index().melt(id_vars=["Gender"], var_name="Metric", value_name="Value")
 
+    st.write(f"#### Comparison by Gender")
     chart = alt.Chart(df_melted).mark_bar().encode(
-        x=alt.X("Gender:N", title="Gender"),
+        x=alt.X("Gender:N", title="Gender", axis=alt.Axis(labelAngle=-45)),
         y=alt.Y("Value:Q", title="Average Value"),
         color="Metric:N", 
         xOffset="Metric:N"
-    ).properties(width=800, height=500, title="Comparison by Gender")
+    ).properties(width=800, height=500)
 
     st.altair_chart(chart)
 
+    for category in categorical_cols:
+        st.write(f"#### Distribution of {category} by Gender")
+        
+        df_count = df.groupby(["Gender", category]).size().reset_index(name="Count")
 
+        chart = alt.Chart(df_count).mark_bar().encode(
+            x=alt.X("Gender:N", title="Gender", axis=alt.Axis(labelAngle=-45)),
+            y=alt.Y("Count:Q", title="Count"),
+            color=alt.Color(f"{category}:N", title=category),
+            xOffset=alt.XOffset(f"{category}:N")
+        ).properties(width=800, height=500)
+
+        st.altair_chart(chart)
 
 elif filter_by == "Age":
     
@@ -75,13 +90,27 @@ elif filter_by == "Age":
     df_melted = df_age.reset_index().melt(id_vars=["Age Group"], var_name="Metric", value_name="Value")
 
     chart = alt.Chart(df_melted).mark_bar().encode(
-        x=alt.X("Age Group:N", title="Age Group"),
+        x=alt.X("Age Group:N", title="Age Group", axis=alt.Axis(labelAngle=-45)),
         y=alt.Y("Value:Q", title="Average Value"),
         color="Metric:N", 
         xOffset="Metric:N"
     ).properties(width=800, height=500, title="Comparison by Age Group")
 
     st.altair_chart(chart)
+
+    for category in categorical_cols:
+        st.write(f"#### Distribution of {category} by Age Group")
+        
+        df_count = df.groupby(["Age Group", category]).size().reset_index(name="Count")
+
+        chart = alt.Chart(df_count).mark_bar().encode(
+            x=alt.X("Age Group:N", title="Age Group", axis=alt.Axis(labelAngle=-45)),
+            y=alt.Y("Count:Q", title="Count"),
+            color=alt.Color(f"{category}:N", title=category),
+            xOffset=alt.XOffset(f"{category}:N")
+        ).properties(width=800, height=500)
+
+        st.altair_chart(chart)
 
 elif filter_by == "Occupation":
 
@@ -98,6 +127,19 @@ elif filter_by == "Occupation":
 
     st.altair_chart(chart)
 
+    for category in categorical_cols:
+        st.write(f"#### Distribution of {category} by Occupation")
+        
+        df_count = df.groupby(["Occupation", category]).size().reset_index(name="Count")
+
+        chart = alt.Chart(df_count).mark_bar().encode(
+            x=alt.X("Occupation:N", title="Occupation"),
+            y=alt.Y("Count:Q", title="Count"),
+            color=alt.Color(f"{category}:N", title=category),
+            xOffset=alt.XOffset(f"{category}:N")
+        ).properties(width=800, height=500)
+
+        st.altair_chart(chart)
 else:
     st.markdown("### Select a category to view the chart :)")
     st.stop()
