@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv('Sleep_health_and_lifestyle_dataset.csv', index_col='Person ID')
+    df = pd.read_csv('Data/Sleep_health_and_lifestyle_dataset.csv', index_col='Person ID')
     df[['Blood Pressure_high', 'Blood Pressure_low']] = df['Blood Pressure'].str.split('/', expand=True)
     df.drop(columns=['Blood Pressure'], inplace=True)
     df['Blood Pressure_high'] = pd.to_numeric(df['Blood Pressure_high'], errors='coerce')
