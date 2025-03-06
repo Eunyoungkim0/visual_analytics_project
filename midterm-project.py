@@ -1,3 +1,4 @@
+# streamlit run midterm-project.py
 import altair as alt
 import streamlit as st
 import pandas as pd
@@ -36,6 +37,17 @@ order_dict = {"BMI Category": ["Underweight", "Normal", "Overweight", "Obese"],
 df_encoded = pd.get_dummies(df, columns=['Gender', 'Occupation', 'BMI Category', 'Sleep Disorder'])
 corr_matrix = df_encoded.corr()
 
+def categorize_sleep_duration(x, bins):
+    return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
+
+def categorize_physical_activity(x, bins):
+    return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
+
+def categorize_daily_steps(x, bins):
+    return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
+
+def categorize_heart_rate(x, bins):
+    return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
 
 # Radio Group
 view_option = st.sidebar.radio(
@@ -55,47 +67,86 @@ if view_option == "Dataset analysis":
         chart1 = alt.Chart(df).mark_bar().encode(
             x="Gender:N", 
             y="count():Q",
-            color="Gender:N"
+            color=alt.Color("Gender:N", legend=None)
         ).properties(width=300, height=320, title='Gender Distribution') 
         st.altair_chart(chart1)
 
-        chart2 = alt.Chart(df).mark_bar().encode(
+        chart3 = alt.Chart(df).mark_bar().encode(
             x="Occupation:N", 
             y="count():Q",
-            color="Occupation:N"
-        ).properties(width=300, height=320, title='Occupation Distribution')
-        st.altair_chart(chart2)
-
-        chart3 = alt.Chart(df).mark_bar().encode(
-            x="BMI Category:N", 
-            y="count():Q",
-            color="BMI Category:N"
-        ).properties(width=300, height=320, title='BMI Category Distribution')
+            color=alt.Color("Occupation:N", legend=None)
+        ).properties(width=300, height=470, title='Occupation Distribution')
         st.altair_chart(chart3)
 
         chart4 = alt.Chart(df).mark_bar().encode(
-            x="Sleep Disorder:N", 
+            x=alt.X("BMI Category:N", sort=order_dict["BMI Category"]), 
             y="count():Q",
-            color="Sleep Disorder:N"
-        ).properties(width=300, height=320, title='Sleep Disorder Distribution')
+            color=alt.Color("BMI Category:N", legend=None)
+        ).properties(width=300, height=320, title='BMI Category Distribution')
         st.altair_chart(chart4)
 
+        chart5 = alt.Chart(df).mark_bar().encode(
+            x=alt.X("Stress Level:O", title="Stress Level", sort="ascending"),
+            y="count():Q",
+            color=alt.Color("Stress Level:N", legend=None)
+        ).properties(width=300, height=320, title="Stress Level Distribution")
+        st.altair_chart(chart5)
+
+        chart6 = alt.Chart(df).mark_bar().encode(
+            x=alt.X("Quality of Sleep:O", title="Quality of Sleep", sort="ascending"),
+            y="count():Q",
+            color=alt.Color("Quality of Sleep:N", legend=None)
+        ).properties(width=300, height=320, title="Quality of Sleep Distribution")
+        st.altair_chart(chart6)
+
+        chart7 = alt.Chart(df).mark_bar().encode(
+            x=alt.X("Sleep Disorder:N", sort=order_dict["Sleep Disorder"]), 
+            y="count():Q",
+            color=alt.Color("Sleep Disorder:N", legend=None)
+        ).properties(width=300, height=320, title='Sleep Disorder Distribution')
+        st.altair_chart(chart7)
+        
     with col2:
-        fig1 = px.pie(df, names='Gender')
-        fig1.update_layout(height=320)
-        st.plotly_chart(fig1)
+        
+        age_bins = [25, 30, 40, 50, 60, 70]
+        age_labels = ["20's", "30's", "40's", "50's", "60's'"]
+        df["Age Group"] = pd.cut(df["Age"], bins=age_bins, labels=age_labels, right=False)
+        df["Age Group"] = pd.Categorical(df["Age Group"], categories=age_labels, ordered=True)
 
-        fig2 = px.pie(df, names='Occupation')
-        fig2.update_layout(height=320)
-        st.plotly_chart(fig2)
+        chart2 = alt.Chart(df).mark_bar().encode(
+            x=alt.X("Age Group:N", sort=age_labels),
+            y="count():Q",
+            color=alt.Color("Age Group:N", legend=None)
+        ).properties(width=300, height=320, title='Age Group Distribution')
+        st.altair_chart(chart2)
 
-        fig3 = px.pie(df, names='BMI Category')
-        fig3.update_layout(height=320)
-        st.plotly_chart(fig3)
+        st.write("Select number of bins for categories below")
+        num_bins = st.slider("Number of bins", 2, 6, 4)
+        bin_cols = ["Sleep Duration", "Physical Activity Level", "Daily Steps", "Heart Rate"]
 
-        fig4 = px.pie(df, names='Sleep Disorder')
-        fig4.update_layout(height=320)
-        st.plotly_chart(fig4)
+        for col in bin_cols:
+            group_col = str(col) + " Group"
+
+            min_value = df[col].min()
+            max_value = df[col].max()
+
+            bins = np.linspace(min_value, max_value, num_bins + 1).astype(int)
+            bins = np.unique(bins)
+
+            labels = [f"{bins[i]}-{bins[i+1]-1}" for i in range(len(bins)-1)]    
+
+            df[group_col] = pd.cut(df[col], bins=bins, labels=labels, right=False, duplicates='drop')
+            df_group = df.groupby(group_col).size().reset_index(name="Count")
+            df_melted = df_group.melt(id_vars=[group_col], var_name="Metric", value_name="Value")
+
+            chart = alt.Chart(df_melted).mark_bar().encode(
+                x=alt.X(f"{group_col}:N", title=group_col, sort=labels),
+                y="Value:Q",
+                color=alt.Color(f"{group_col}:N", legend=None)
+            ).properties(width=300, height=320, title=f"{col} Group Distribution")
+
+            st.altair_chart(chart)
+
 
 elif view_option == "View filtered data":
     st.write("## View Filtered Data")
@@ -206,7 +257,7 @@ elif view_option == "Check correlation by variable":
     st.write("### Correlation Matrix Heatmap")
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", ax=ax)
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax)
     st.pyplot(fig)
 
     st.write("### Select correlation threshold")
@@ -216,7 +267,7 @@ elif view_option == "Check correlation by variable":
     st.write(f"### Filtered Correlation Matrix (|corr| ≥ {threshold})")
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(filtered_corr, annot=True, cmap='coolwarm', fmt=".2f", ax=ax, 
+    sns.heatmap(filtered_corr, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax, 
             linewidths=0.5, linecolor='black', mask=filtered_corr.isna())
     st.pyplot(fig)
 
