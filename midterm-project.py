@@ -21,7 +21,7 @@ def load_data():
     df.drop(columns=['Blood Pressure'], inplace=True)
     df['Blood Pressure_high'] = pd.to_numeric(df['Blood Pressure_high'], errors='coerce')
     df['Blood Pressure_low'] = pd.to_numeric(df['Blood Pressure_low'], errors='coerce')
-    df['BMI Category'] = df['BMI Category'].replace('Normal Weight', 'Underweight')
+    df['BMI Category'] = df['BMI Category'].replace('Normal Weight', 'Normal')
     df['Sleep Disorder'] = df['Sleep Disorder'].fillna('None')
     return df
 
