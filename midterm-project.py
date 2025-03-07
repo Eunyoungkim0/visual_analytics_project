@@ -7,6 +7,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
 
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, explained_variance_score, median_absolute_error
+from statsmodels.stats.stattools import durbin_watson
+
 st.set_page_config(layout="wide")
 
 @st.cache_data
@@ -274,7 +279,70 @@ elif view_option == "Check correlation by variable":
 elif view_option == "Linear regression analysis":
 
     st.write("## Linear Regression Analysis")
-    st.write("Work in progress")
+    
+    correlation_matrix = df[numeric_cols].corr().abs()
+    correlation_with_target = correlation_matrix.mean().sort_values(ascending=False)
+    sorted_numeric_cols = correlation_with_target.index.tolist()
+
+    x_option = st.selectbox("Select predictor variable (X):", sorted_numeric_cols)
+    y_option = st.selectbox("Select response variable (Y):", [col for col in sorted_numeric_cols if col != x_option])
+    
+    if x_option and y_option:
+        if x_option == y_option:
+            st.error(" Predictor and response variables must be different. Please select different columns.")
+
+    correlation = df[[x_option, y_option]].corr().iloc[0, 1]
+    if abs(correlation) < 0.1: 
+        st.warning(f"⚠ The correlation between {x_option} and {y_option} is very low ({correlation:.2f})."
+            " This means that linear regression may not be meaningful.")
+
+    if x_option and y_option:
+        X = df[[x_option]].dropna()
+        y = df[y_option].dropna()
+
+        df_reg = pd.concat([X, y], axis=1).dropna()
+        X = df_reg[[x_option]]
+        y = df_reg[y_option]
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        coef = model.coef_[0]
+        intercept = model.intercept_
+        r2 = r2_score(y_test, y_pred)
+        adj_r2 = 1 - (1 - r2) * (len(y_test) - 1) / (len(y_test) - 1 - 1)
+        mae = mean_absolute_error(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        evs = explained_variance_score(y_test, y_pred)
+        residuals = y_test - y_pred
+        dw_stat = durbin_watson(residuals)
+
+        st.write("### Regression Equation")
+        st.latex(f"{y_option} = {coef:.4f} * {x_option} + {intercept:.4f}")
+
+        st.write("### Regression Plot")
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.scatterplot(x=X_test[x_option], y=y_test, ax=ax, label="Actual Data")
+        sns.lineplot(x=X_test[x_option], y=y_pred, color="red", ax=ax, label="Regression Line")
+        ax.set_xlabel(x_option)
+        ax.set_ylabel(y_option)
+        ax.set_title("Linear Regression Plot")
+        st.pyplot(fig)
+
+        st.write("### Metrics of Evaluation")
+        metrics_df = pd.DataFrame({
+            "Metric": ["R² Score", "Adjusted R²", "Mean Absolute Error", "Mean Squared Error", "Root Mean Squared Error", "Correlation","Explained Variance Score", "Durbin-Watson Statistic"],
+            "Value": [r2, adj_r2, mae, mse, rmse, correlation, evs, dw_stat]
+        })
+        st.table(metrics_df)
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.histplot(residuals, kde=True, bins=20, ax=ax)
+        ax.set_title("Residuals Distribution")
+        st.pyplot(fig)
 
 else:
 
