@@ -1,5 +1,9 @@
-seaborn
+LinearRegression
+streamlit
+altair
 pandas
 numpy
-streamlit
+seaborn
+matplotlib
+scikit-learn
 statsmodels
