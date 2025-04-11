@@ -25,7 +25,6 @@ def load_data():
     df['Sleep Disorder'] = df['Sleep Disorder'].fillna('None')
     return df
 
-
 st.title('Sleep Health and Lifestyle Visual Analysis')
 
 # load the data
@@ -54,14 +53,15 @@ def categorize_daily_steps(x, bins):
 def categorize_heart_rate(x, bins):
     return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
 
-# Radio Group
-view_option = st.sidebar.radio(
-    "Select what you want to view:",
-    ["Dataset analysis", "View filtered data", "Check correlation by variable", "Linear regression analysis"]
-)
+# tabs for navigation
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Dataset analysis",
+    "View filtered data",
+    "Check correlation by variable",
+    "Linear regression analysis"
+])
 
-
-if view_option == "Dataset analysis":
+with tab1:
     st.write("## Dataset Analysis")
     if st.checkbox('Show dataframe'):
         st.write(df)
@@ -152,8 +152,7 @@ if view_option == "Dataset analysis":
 
             st.altair_chart(chart)
 
-
-elif view_option == "View filtered data":
+with tab2:
     st.write("## View Filtered Data")
 
     numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, numeric_cols[0])
@@ -255,8 +254,7 @@ elif view_option == "View filtered data":
 
             st.altair_chart(chart)
     
-
-elif view_option == "Check correlation by variable":
+with tab3:
     st.write("## Check Correlation by Variable")
 
     st.write("### Correlation Matrix Heatmap")
@@ -276,7 +274,7 @@ elif view_option == "Check correlation by variable":
             linewidths=0.5, linecolor='black', mask=filtered_corr.isna())
     st.pyplot(fig)
 
-elif view_option == "Linear regression analysis":
+with tab4:
 
     st.write("## Linear Regression Analysis")
     
@@ -344,7 +342,7 @@ elif view_option == "Linear regression analysis":
         ax.set_title("Residuals Distribution")
         st.pyplot(fig)
 
-else:
+# else:
 
-    st.markdown("### Select a category from the left side to view the chart. :)")
-    st.stop()
+#     st.markdown("### Select a category from the left side to view the chart. :)")
+#     st.stop()
