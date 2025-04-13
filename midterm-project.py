@@ -53,7 +53,7 @@ def categorize_daily_steps(x, bins):
 def categorize_heart_rate(x, bins):
     return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
 
-def filter_date(numeric_option, col):
+def filter_data(numeric_option, col):
 
     if col == 'Age':
         num_bins = st.slider("Select number of bins:", min_value=2, max_value=6, value=4)
@@ -207,7 +207,7 @@ def view_filtered_data():
         filter_by_option = st.selectbox('How would you like to group the data?', filter_cols)
     st.write("###")
 
-    filter_date(numeric_option, filter_by_option)
+    filter_data(numeric_option, filter_by_option)
     
 def check_correlation_by_variable():
     st.write("## Check Correlation by Variable")
