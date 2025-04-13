@@ -106,28 +106,28 @@ def dataset_analysis():
             x="Gender:N", 
             y="count():Q",
             color=alt.Color("Gender:N", legend=None)
-        ).properties(width=300, height=320, title='Gender Distribution') 
+        ).properties(width=400, height=400, title='Gender Distribution') 
         st.altair_chart(chart1)
 
         chart3 = alt.Chart(df).mark_bar().encode(
             x="Occupation:N", 
             y="count():Q",
             color=alt.Color("Occupation:N", legend=None)
-        ).properties(width=300, height=320, title='Occupation Distribution')
+        ).properties(width=400, height=400, title='Occupation Distribution')
         st.altair_chart(chart3)
 
         chart5 = alt.Chart(df).mark_bar().encode(
             x=alt.X("Stress Level:O", title="Stress Level", sort="ascending"),
             y="count():Q",
             color=alt.Color("Stress Level:N", legend=None)
-        ).properties(width=300, height=320, title="Stress Level Distribution")
+        ).properties(width=400, height=400, title="Stress Level Distribution")
         st.altair_chart(chart5)
 
         chart7 = alt.Chart(df).mark_bar().encode(
             x=alt.X("Sleep Disorder:N", sort=order_dict["Sleep Disorder"]), 
             y="count():Q",
             color=alt.Color("Sleep Disorder:N", legend=None)
-        ).properties(width=300, height=320, title='Sleep Disorder Distribution')
+        ).properties(width=400, height=400, title='Sleep Disorder Distribution')
         st.altair_chart(chart7)
         
     with col2:
@@ -140,21 +140,21 @@ def dataset_analysis():
             x=alt.X("Age Group:N", sort=age_labels),
             y="count():Q",
             color=alt.Color("Age Group:N", legend=None)
-        ).properties(width=300, height=320, title='Age Group Distribution')
+        ).properties(width=400, height=400, title='Age Group Distribution')
         st.altair_chart(chart2)
 
         chart4 = alt.Chart(df).mark_bar().encode(
             x=alt.X("BMI Category:N", sort=order_dict["BMI Category"]), 
             y="count():Q",
             color=alt.Color("BMI Category:N", legend=None)
-        ).properties(width=300, height=320, title='BMI Category Distribution')
+        ).properties(width=400, height=400, title='BMI Category Distribution')
         st.altair_chart(chart4)
 
         chart6 = alt.Chart(df).mark_bar().encode(
             x=alt.X("Quality of Sleep:O", title="Quality of Sleep", sort="ascending"),
             y="count():Q",
             color=alt.Color("Quality of Sleep:N", legend=None)
-        ).properties(width=300, height=320, title="Quality of Sleep Distribution")
+        ).properties(width=400, height=400, title="Quality of Sleep Distribution")
         st.altair_chart(chart6)
 
         sleep_bins = [5, 6, 7, 8, 9]
@@ -165,7 +165,7 @@ def dataset_analysis():
             x=alt.X("Sleep Duration Group:N", title="Hours of Sleep", sort=sleep_labels),
             y=alt.Y("Count:Q", title="Count"),
             color=alt.Color("Sleep Duration Group:N", legend=None)
-        ).properties(width=300, height=320, title="Sleep Duration Distribution")
+        ).properties(width=400, height=400, title="Sleep Duration Distribution")
         st.altair_chart(chart8)
 
     with col3:
@@ -193,7 +193,7 @@ def dataset_analysis():
                 x=alt.X(f"{group_col}:N", title=group_col, sort=labels),
                 y="Value:Q",
                 color=alt.Color(f"{group_col}:N", legend=None)
-            ).properties(width=300, height=320, title=f"{col} Group Distribution")
+            ).properties(width=400, height=400, title=f"{col} Group Distribution")
 
             st.altair_chart(chart)
 
