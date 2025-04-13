@@ -74,24 +74,26 @@ def filter_data(numeric_option, col):
         y=alt.Y("Value:Q", title="Average Value"),
         color="Metric:N", 
         xOffset="Metric:N"
-    ).properties(width=800, height=500)
+    ).properties(width=700, height=500)
 
     st.altair_chart(chart)
 
-    for category in categorical_cols:
-        st.write(f"#### Distribution of {category} by {col}")
-        
-        df_count = df.groupby([f'{col}', category], observed=False).size().reset_index(name="Count")
-        sort_order = order_dict.get(category, None)
+    cols = st.columns(len(categorical_cols))
+    for i, category in enumerate(categorical_cols):
+        with cols[i]:
+            st.write(f"#### Distribution of {category} by {col}")
+            
+            df_count = df.groupby([f'{col}', category], observed=False).size().reset_index(name="Count")
+            sort_order = order_dict.get(category, None)
 
-        chart = alt.Chart(df_count).mark_bar().encode(
-            x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45), sort=sort_order),
-            y=alt.Y("Count:Q", title="Count"),
-            color=alt.Color(f"{category}:N", title=category, sort=sort_order),
-            xOffset=alt.XOffset(f"{category}:N", sort=sort_order)
-        ).properties(width=800, height=500)
+            chart = alt.Chart(df_count).mark_bar().encode(
+                x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45), sort=sort_order),
+                y=alt.Y("Count:Q", title="Count"),
+                color=alt.Color(f"{category}:N", title=category, sort=sort_order),
+                xOffset=alt.XOffset(f"{category}:N", sort=sort_order)
+            ).properties(width=700, height=500)  
 
-        st.altair_chart(chart)
+            st.altair_chart(chart)
 
 def dataset_analysis():
     st.write("## Dataset Analysis")
