@@ -211,11 +211,11 @@ def view_filtered_data():
 def check_correlation_by_variable():
     st.write("## Check Correlation by Variable")
 
-    st.write("### Correlation Matrix Heatmap")
+    # st.write("### Correlation Matrix Heatmap")
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax)
-    st.pyplot(fig)
+    # fig, ax = plt.subplots(figsize=(10, 6))
+    # sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax)
+    # st.pyplot(fig)
 
     st.write("### Select correlation threshold")
     threshold = st.slider("Correlation Threshold", 0.0, 1.0, 0.6, 0.1)
@@ -223,10 +223,27 @@ def check_correlation_by_variable():
 
     st.write(f"### Filtered Correlation Matrix (|corr| ≥ {threshold})")
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(filtered_corr, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax, 
-            linewidths=0.5, linecolor='black', mask=filtered_corr.isna())
-    st.pyplot(fig)
+    col1, col2 = st.columns([2, 1]) 
+
+    with col1:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.heatmap(filtered_corr, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax, 
+                linewidths=0.5, linecolor='black', mask=filtered_corr.isna())
+        st.pyplot(fig)
+    
+    with col2:
+        stacked = filtered_corr.stack()
+        stacked = stacked[stacked.index.get_level_values(0) != stacked.index.get_level_values(1)]
+        stacked.index = stacked.index.map(lambda x: tuple(sorted(x)))
+        stacked = stacked[~stacked.index.duplicated(keep='first')]
+
+        corr_pairs_df = stacked.reset_index()
+        corr_pairs_df.columns = ['Variable 1', 'Variable 2', 'Correlation']
+
+        corr_pairs_df['Abs Corr'] = corr_pairs_df['Correlation'].abs()
+        corr_pairs_df = corr_pairs_df.sort_values(by='Abs Corr', ascending=False).drop(columns='Abs Corr')
+
+        st.table(corr_pairs_df.reset_index(drop=True))
 
 def linear_regression_analysis():
     st.write("## Linear Regression Analysis")
