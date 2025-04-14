@@ -53,48 +53,6 @@ def categorize_daily_steps(x, bins):
 def categorize_heart_rate(x, bins):
     return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
 
-def filter_data(numeric_option, col):
-
-    if col == 'Age':
-        num_bins = st.slider("Select number of bins:", min_value=2, max_value=6, value=4)
-        min_age = df['Age'].min()
-        max_age = df['Age'].max()
-
-        bins = np.linspace(min_age, max_age, num_bins + 1).astype(int)
-        labels = [f"{bins[i]}-{bins[i+1]-1}" for i in range(len(bins)-1)]    
-        df['Age Group'] = pd.cut(df['Age'], bins=bins, labels=labels, right=False)
-        col = 'Age Group'
-
-    df_group = df.groupby(f'{col}', observed=False)[numeric_option].mean()
-    df_melted = df_group.reset_index().melt(id_vars=[f'{col}'], var_name="Metric", value_name="Value")
-
-    st.write(f"#### Comparison by {col}")
-    chart = alt.Chart(df_melted).mark_bar().encode(
-        x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45)),
-        y=alt.Y("Value:Q", title="Average Value"),
-        color="Metric:N", 
-        xOffset="Metric:N"
-    ).properties(width=700, height=500)
-
-    st.altair_chart(chart)
-
-    cols = st.columns(len(categorical_cols))
-    for i, category in enumerate(categorical_cols):
-        with cols[i]:
-            st.write(f"#### Distribution of {category} by {col}")
-            
-            df_count = df.groupby([f'{col}', category], observed=False).size().reset_index(name="Count")
-            sort_order = order_dict.get(category, None)
-
-            chart = alt.Chart(df_count).mark_bar().encode(
-                x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45), sort=sort_order),
-                y=alt.Y("Count:Q", title="Count"),
-                color=alt.Color(f"{category}:N", title=category, sort=sort_order),
-                xOffset=alt.XOffset(f"{category}:N", sort=sort_order)
-            ).properties(width=700, height=500)  
-
-            st.altair_chart(chart)
-
 def dataset_analysis():
     st.write("## Dataset Analysis")
     if st.checkbox('Show dataframe'):
@@ -199,17 +157,56 @@ def dataset_analysis():
 
             st.altair_chart(chart)
 
+def filter_data(col):
+
+    if col == 'Age':
+        num_bins = st.slider("Select number of bins:", min_value=2, max_value=6, value=4)
+        min_age = df['Age'].min()
+        max_age = df['Age'].max()
+
+        bins = np.linspace(min_age, max_age, num_bins + 1).astype(int)
+        labels = [f"{bins[i]}-{bins[i+1]-1}" for i in range(len(bins)-1)]    
+        df['Age Group'] = pd.cut(df['Age'], bins=bins, labels=labels, right=False)
+        col = 'Age Group'
+
+    cols = st.columns(len(categorical_cols))
+    for i, category in enumerate(categorical_cols):
+        with cols[i]:
+            st.write(f"#### Distribution of {category} by {col}")
+            
+            df_count = df.groupby([f'{col}', category], observed=False).size().reset_index(name="Count")
+            sort_order = order_dict.get(category, None)
+
+            chart = alt.Chart(df_count).mark_bar().encode(
+                x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45), sort=sort_order),
+                y=alt.Y("Count:Q", title="Count"),
+                color=alt.Color(f"{category}:N", title=category, sort=sort_order),
+                xOffset=alt.XOffset(f"{category}:N", sort=sort_order)
+            ).properties(width=700, height=500)  
+
+            st.altair_chart(chart)
+
+    numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, numeric_cols[0])
+    
+    df_group = df.groupby(f'{col}', observed=False)[numeric_option].mean()
+    df_melted = df_group.reset_index().melt(id_vars=[f'{col}'], var_name="Metric", value_name="Value")
+
+    st.write(f"#### Comparison by {col}")
+    chart = alt.Chart(df_melted).mark_bar().encode(
+        x=alt.X(f'{col}:N', title=f'{col}', axis=alt.Axis(labelAngle=-45)),
+        y=alt.Y("Value:Q", title="Average Value"),
+        color="Metric:N", 
+        xOffset="Metric:N"
+    ).properties(width=800, height=500)
+
+    st.altair_chart(chart)
+
 def view_filtered_data():
     st.write("## View Filtered Data")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        numeric_option = st.multiselect('Which factors would you like to view? (Numeric Values)', numeric_cols, numeric_cols[0])
-    with col2:
-        filter_by_option = st.selectbox('How would you like to group the data?', filter_cols)
-    st.write("###")
+    filter_by_option = st.selectbox('How would you like to group the data?', filter_cols)
 
-    filter_data(numeric_option, filter_by_option)
+    filter_data(filter_by_option)
     
 def check_correlation_by_variable():
     st.write("## Check Correlation by Variable")
