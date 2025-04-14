@@ -252,8 +252,12 @@ def linear_regression_analysis():
     correlation_with_target = correlation_matrix.mean().sort_values(ascending=False)
     sorted_numeric_cols = correlation_with_target.index.tolist()
 
-    x_option = st.selectbox("Select predictor variable (X):", sorted_numeric_cols)
-    y_option = st.selectbox("Select response variable (Y):", [col for col in sorted_numeric_cols if col != x_option])
+    col1, col2 = st.columns(2)
+
+    with col1:
+        x_option = st.selectbox("Select predictor variable (X):", sorted_numeric_cols)
+    with col2:
+        y_option = st.selectbox("Select response variable (Y):", [col for col in sorted_numeric_cols if col != x_option])
     
     if x_option and y_option:
         if x_option == y_option:
@@ -291,26 +295,31 @@ def linear_regression_analysis():
         st.write("### Regression Equation")
         st.latex(f"{y_option} = {coef:.4f} * {x_option} + {intercept:.4f}")
 
-        st.write("### Regression Plot")
-        fig, ax = plt.subplots(figsize=(8, 5))
-        sns.scatterplot(x=X_test[x_option], y=y_test, ax=ax, label="Actual Data")
-        sns.lineplot(x=X_test[x_option], y=y_pred, color="red", ax=ax, label="Regression Line")
-        ax.set_xlabel(x_option)
-        ax.set_ylabel(y_option)
-        ax.set_title("Linear Regression Plot")
-        st.pyplot(fig)
+        col1, col2 = st.columns([2, 1])
 
-        st.write("### Metrics of Evaluation")
-        metrics_df = pd.DataFrame({
-            "Metric": ["R² Score", "Adjusted R²", "Mean Absolute Error", "Mean Squared Error", "Root Mean Squared Error", "Correlation","Explained Variance Score", "Durbin-Watson Statistic"],
-            "Value": [r2, adj_r2, mae, mse, rmse, correlation, evs, dw_stat]
-        })
-        st.table(metrics_df)
+        with col1:
+            st.write("### Regression Plot")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            sns.scatterplot(x=X_test[x_option], y=y_test, ax=ax, label="Actual Data")
+            sns.lineplot(x=X_test[x_option], y=y_pred, color="red", ax=ax, label="Regression Line")
+            ax.set_xlabel(x_option)
+            ax.set_ylabel(y_option)
+            ax.set_title("Linear Regression Plot")
+            st.pyplot(fig)
 
-        fig, ax = plt.subplots(figsize=(8, 5))
-        sns.histplot(residuals, kde=True, bins=20, ax=ax)
-        ax.set_title("Residuals Distribution")
-        st.pyplot(fig)
+            st.write("### Residuals Distribution")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            sns.histplot(residuals, kde=True, bins=20, ax=ax)
+            ax.set_title("Residuals Distribution")
+            st.pyplot(fig)
+
+        with col2:
+            st.write("### Metrics of Evaluation")
+            metrics_df = pd.DataFrame({
+                "Metric": ["R² Score", "Adjusted R²", "Mean Absolute Error", "Mean Squared Error", "Root Mean Squared Error", "Correlation","Explained Variance Score", "Durbin-Watson Statistic"],
+                "Value": [r2, adj_r2, mae, mse, rmse, correlation, evs, dw_stat]
+            })
+            st.table(metrics_df)
 
 # tabs for navigation
 tab1, tab2, tab3, tab4 = st.tabs([
