@@ -22,6 +22,12 @@ def load_data():
     df['Blood Pressure_low'] = pd.to_numeric(df['Blood Pressure_low'], errors='coerce')
     df['BMI Category'] = df['BMI Category'].replace('Normal Weight', 'Normal')
     df['Sleep Disorder'] = df['Sleep Disorder'].fillna('None')
+
+    occ_counts = df['Occupation'].value_counts()
+    low_occ = occ_counts[occ_counts < 5].index
+    mask = df['Occupation'].isin(low_occ)
+    df.loc[mask, 'Occupation'] = 'Other'
+
     return df
 
 st.title('Sleep Health and Lifestyle Visual Analysis')
