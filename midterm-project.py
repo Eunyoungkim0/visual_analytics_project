@@ -1,10 +1,12 @@
 # streamlit run midterm-project.py
+import os
 import altair as alt
 import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import openai
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -12,6 +14,10 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, e
 from statsmodels.stats.stattools import durbin_watson
 
 st.set_page_config(layout="wide")
+client = openai.OpenAI(
+    base_url=os.getenv("GROQ_BASE_URL"),
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 @st.cache_data
 def load_data():
@@ -57,6 +63,47 @@ def categorize_daily_steps(x, bins):
 
 def categorize_heart_rate(x, bins):
     return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
+
+
+def introduction():
+    st.write("## Introduction")
+
+    st.markdown("### 👥 **Team 3**")
+    st.markdown("""
+    - **Andreas Lambropoulos**  
+    - **Eunyoung Kim**  
+    - **Rohith Arikatla**
+    """)
+
+    st.markdown("### 🎯 **Objective**")
+    st.markdown(
+        """
+        This project helps you explore how your sleep habits, physical activity, stress, and other health factors are connected.  
+        With interactive visuals and simple prediction tools, you can better understand your own health and how your lifestyle may be affecting it.
+        """
+    )
+
+    st.markdown("### 📊 **What You Can Get from This Project**")
+    st.markdown(
+        """
+        Using data like **gender, age, occupation, sleep duration, sleep quality, physical activity, stress, BMI, heart rate, daily steps, sleep disorder**, and **blood pressure**, you can:
+
+        1. 🧮 **Get a quick overview of the data**  
+        - Compare different groups (e.g., average sleep time by age or occupation)
+
+        2. 🔍 **Filter and explore specific trends**  
+        - Want to see how stress levels vary by gender or age? You can do that with a few clicks.
+
+        3. 🔗 **Check how variables are related**  
+        - Discover interesting correlations, like how physical activity may affect sleep quality or stress.
+
+        4. 📈 **Predict health values**  
+        - Know a few health metrics? Use linear regression to estimate others.
+
+        5. 🧑‍⚕️ **Input your own data for personalized results**  
+        - Enter your info in the input tab and get instant predictions and feedback!
+        """
+    )
 
 def dataset_analysis():
     st.write("## Dataset Analysis")
@@ -231,10 +278,15 @@ def check_correlation_by_variable():
     col1, col2 = st.columns([2, 1]) 
 
     with col1:
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.heatmap(filtered_corr, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 7}, ax=ax, 
-                linewidths=0.5, linecolor='black', mask=filtered_corr.isna())
+        fig, ax = plt.subplots(figsize=(7, 5))
+        fig.patch.set_facecolor('#e8e8e8')
+        sns.heatmap(filtered_corr, annot=True, cmap='viridis', fmt=".2f", annot_kws={"size": 6}, ax=ax, 
+                linewidths=0.5, linecolor='gray', mask=filtered_corr.isna())
+        ax.tick_params(axis='both', labelsize=6)
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=6)
         st.pyplot(fig)
+
     
     with col2:
         stacked = filtered_corr.stack()
@@ -248,7 +300,26 @@ def check_correlation_by_variable():
         corr_pairs_df['Abs Corr'] = corr_pairs_df['Correlation'].abs()
         corr_pairs_df = corr_pairs_df.sort_values(by='Abs Corr', ascending=False).drop(columns='Abs Corr')
 
-        st.table(corr_pairs_df.reset_index(drop=True))
+        # st.table(corr_pairs_df.reset_index(drop=True))
+
+        if st.button("Generate Detailed Explanation"):
+            # Convert data to Markdown for prompt
+            corr_md = corr_pairs_df.to_markdown(index=False)
+
+            prompt = f"""The table below shows the correlation between Variable 1 and Variable 2:\n\n{corr_md}\n\n
+            Please provide a brief and clear interpretation of these results. Highlight which variables are highly correlated, 
+            explain what the correlations might imply, and share any potential insights (at least five insights) and any suggestions to stay healthy only based on the table data.
+            And also, explain it in a way even for high school students to understand it easily, but don't mention hight school students."""
+
+            # Query Groq for interpretation
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            st.write(response.choices[0].message.content)
+
+            st.write(corr_md)
+
 
 def linear_regression_analysis():
     st.write("## Linear Regression Analysis")
@@ -327,7 +398,8 @@ def linear_regression_analysis():
             st.table(metrics_df)
 
 # tabs for navigation
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "Introduction",
     "Dataset analysis",
     "View filtered data",
     "Check correlation by variable",
@@ -335,13 +407,16 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 with tab1:
-    dataset_analysis()
+    introduction()
 
 with tab2:
-    view_filtered_data()
+    dataset_analysis()
 
 with tab3:
-    check_correlation_by_variable()
+    view_filtered_data()
 
 with tab4:
+    check_correlation_by_variable()
+
+with tab5:
     linear_regression_analysis()
