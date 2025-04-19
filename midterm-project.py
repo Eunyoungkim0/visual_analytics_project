@@ -7,16 +7,31 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import openai
+from sklearn.preprocessing import LabelEncoder
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, explained_variance_score, median_absolute_error
 from statsmodels.stats.stattools import durbin_watson
+from dotenv import load_dotenv
+load_dotenv()
 
 st.set_page_config(layout="wide")
 client = openai.OpenAI(
     base_url=os.getenv("GROQ_BASE_URL"),
     api_key=os.getenv("GROQ_API_KEY")
+)
+
+st.markdown(
+    """
+    <style>
+    .stForm {
+        max-width: 90%;
+        margin: 0 auto;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 @st.cache_data
@@ -397,13 +412,69 @@ def linear_regression_analysis():
             })
             st.table(metrics_df)
 
+def check_your_health():
+    st.write("## Check your health")
+    st.write("Want to get a friendly prediction of your health? Just fill in your info below!")
+
+    categorical_cols_2 = ['Gender', 'Occupation', 'BMI Category', 'Sleep Disorder']
+    label_encoders = {}
+
+    for col in categorical_cols_2:
+        le = LabelEncoder()
+        le.fit(df[col])
+        label_encoders[col] = le
+        df[col] = le.transform(df[col])
+
+    for col in categorical_cols_2:
+        encoded_values = df[col].unique()
+        decoded_values = label_encoders[col].inverse_transform(encoded_values)
+
+    with st.form("health_form"):
+        age = st.number_input("🎂 How old are you?", min_value=0, max_value=120, value=0)
+        gender = st.selectbox("🧑‍⚕️ What is your gender?", label_encoders['Gender'].classes_)
+        occupation = st.selectbox("💼 What best describes your occupation?", label_encoders['Occupation'].classes_)
+        stress_level = st.slider("👉 How stressed do you feel? (1 = Not at all, 10 = Extremely stressed)", 1, 10, 1)
+        bp_high = st.number_input("🔴 What is your typical *high* blood pressure? (e.g., 120)", min_value=80, max_value=200, value=80)
+        bp_low = st.number_input("🔵 What is your typical *low* blood pressure? (e.g., 80)", min_value=40, max_value=120, value=40)
+        quality_of_sleep = st.slider("💤 How would you rate your sleep quality? (1 = Very poor, 10 = Excellent)", 1, 10, 1)
+        sleep_duration = st.number_input("🕒 On average, how many hours do you sleep per night?", min_value=0.0, max_value=24.0, value=0.0, step=0.5)
+        heart_rate = st.number_input("❤️ What's your resting heart rate? (e.g., 72 bpm)", min_value=40, max_value=200, value=40)
+        activity_level = st.number_input(
+            "🏋️‍♂️ On average, how many minutes do you exercise per day?",
+            min_value=0,
+            max_value=400,
+            value=0,
+            step=5,
+            help="Include walking, workouts, or any physical activities."
+        )
+        daily_steps = st.number_input("👟 On average, how many steps do you take each day?", min_value=0, max_value=50000, value=0, step=500)
+
+        submitted = st.form_submit_button("Check Results")
+
+    if submitted:
+        st.success("✅ Got your information! Here's what you shared:")
+        st.markdown(f"""
+        - **Age**: {age} years old  
+        - **Gender**: {gender}  
+        - **Occupation**: {occupation}  
+        - **Stress Level**: {stress_level} (1-10)  
+        - **High Blood Pressure**: {bp_high} mmHg  
+        - **Low Blood Pressure**: {bp_low} mmHg  
+        - **Sleep Quality**: {quality_of_sleep} (1-10)  
+        - **Sleep Duration**: {sleep_duration} hours  
+        - **Heart Rate**: {heart_rate} bpm  
+        - **Physical Activity Level**: {activity_level} minutes per day  
+        - **Daily Steps**: {daily_steps} steps  
+        """)
+
 # tabs for navigation
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Introduction",
     "Dataset analysis",
     "View filtered data",
     "Check correlation by variable",
-    "Linear regression analysis"
+    "Linear regression analysis",
+    "Check your health"
 ])
 
 with tab1:
@@ -420,3 +491,6 @@ with tab4:
 
 with tab5:
     linear_regression_analysis()
+
+with tab6:
+    check_your_health()
