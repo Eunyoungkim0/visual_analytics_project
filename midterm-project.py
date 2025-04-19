@@ -84,11 +84,10 @@ def introduction():
     st.write("## Introduction")
 
     st.markdown("### 👥 **Team 3**")
-    st.markdown("""
-    - **Andreas Lambropoulos**  
-    - **Eunyoung Kim**  
-    - **Rohith Arikatla**
-    """)
+    team_cols = st.columns(3)
+    team_members = ["Andreas Lambropoulos", "Eunyoung Kim", "Rohith Arikatla"]
+    for col, member in zip(team_cols, team_members):
+        col.success(f"👤 {member}")
 
     st.markdown("### 🎯 **Objective**")
     st.markdown(
@@ -122,8 +121,13 @@ def introduction():
 
 def dataset_analysis():
     st.write("## Dataset Analysis")
-    if st.checkbox('Show dataframe'):
-        st.write(df)
+    with st.expander("🔍 View DataFrame"):
+        st.dataframe(df)
+
+        # Slider for bin settings (applies to multiple charts)
+    st.markdown("### Customize Binning")
+    num_bins = st.slider("Select number of bins (applies to Physical Activity Level, Daily Steps, Heart Rate)", 2, 6, 4)
+    bin_cols = ["Physical Activity Level", "Daily Steps", "Heart Rate"]
 
     col1, col2, col3 = st.columns(3) 
 
@@ -196,10 +200,6 @@ def dataset_analysis():
         st.altair_chart(chart8)
 
     with col3:
-
-        st.write("Select number of bins for categories below")
-        num_bins = st.slider("Number of bins", 2, 6, 4)
-        bin_cols = ["Physical Activity Level", "Daily Steps", "Heart Rate"]
 
         for col in bin_cols:
             group_col = str(col) + " Group"
