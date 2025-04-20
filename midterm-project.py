@@ -285,7 +285,7 @@ def check_correlation_by_variable():
     # st.pyplot(fig)
 
     st.write("### Select correlation threshold")
-    threshold = st.slider("Correlation Threshold", 0.0, 1.0, 0.6, 0.1)
+    threshold = st.slider("Correlation Threshold", 0.0, 0.8, 0.6, 0.1)
     filtered_corr = corr_matrix[(corr_matrix >= threshold) | (corr_matrix <= -threshold)]
 
     st.write(f"### Filtered Correlation Matrix (|corr| ≥ {threshold})")
@@ -314,16 +314,28 @@ def check_correlation_by_variable():
 
         corr_pairs_df['Abs Corr'] = corr_pairs_df['Correlation'].abs()
         corr_pairs_df = corr_pairs_df.sort_values(by='Abs Corr', ascending=False).drop(columns='Abs Corr')
+        starts_with = lambda col, prefix: corr_pairs_df[col].str.startswith(prefix)
 
+        mask = (
+            (starts_with('Variable 1', 'Gender_') & starts_with('Variable 2', 'Gender_')) |
+            ((corr_pairs_df['Variable 1'] == 'Age') & starts_with('Variable 2', 'Gender_')) |
+            (starts_with('Variable 1', 'Blood Pressure_') & starts_with('Variable 2', 'Blood Pressure_')) |
+            (starts_with('Variable 1', 'BMI Category_') & starts_with('Variable 2', 'BMI Category_')) |
+            (starts_with('Variable 1', 'Occupation_') & starts_with('Variable 2', 'Occupation_')) |
+            ((corr_pairs_df['Variable 1'].eq('Age') | starts_with('Variable 1', 'Gender_')) &
+            starts_with('Variable 2', 'Occupation_'))
+        )
+
+        filtered_corr_pairs_df = corr_pairs_df[~mask].reset_index(drop=True)
         # st.table(corr_pairs_df.reset_index(drop=True))
 
         if st.button("Generate Detailed Explanation"):
             # Convert data to Markdown for prompt
-            corr_md = corr_pairs_df.to_markdown(index=False)
+            corr_md = filtered_corr_pairs_df.to_markdown(index=False)
 
             prompt = f"""The table below shows the correlation between Variable 1 and Variable 2:\n\n{corr_md}\n\n
-            Please provide a brief and clear interpretation of these results. Highlight which variables are highly correlated, 
-            explain what the correlations might imply, and share any potential insights (at least five insights) and any suggestions to stay healthy only based on the table data.
+            Please provide a brief and clear interpretation of these results.
+            Explain any potential insights (at least five insights) and any suggestions to stay healthy only based on the correlations.
             And also, explain it in a way even for high school students to understand it easily, but don't mention hight school students."""
 
             # Query Groq for interpretation
