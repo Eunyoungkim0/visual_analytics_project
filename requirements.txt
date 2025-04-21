@@ -7,3 +7,5 @@ seaborn
 matplotlib
 scikit-learn
 statsmodels
+openai
+python-dotenv
