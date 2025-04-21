@@ -1,8 +1,13 @@
-# Project Title
+# Sleep Health and Lifestyle Visual Analysis
+
+## Team 3
+- Andreas Lambropoulos
+- Eunyoung Kim
+- Rohith Arikatla
 
 ## App Deployment URL
 
-[Link to your deployed app]
+https://eunyoungkim0-visual-analytics-project-midterm-project-5ijcrf.streamlit.app/
 
 ## Local Setup Instructions
 
