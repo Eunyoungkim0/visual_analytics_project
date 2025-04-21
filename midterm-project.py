@@ -497,25 +497,28 @@ def check_your_health():
         submitted = st.form_submit_button("Check Results")
 
     if submitted:
-        st.success("Got your information! Here's what you shared:")
-        st.markdown(f"""
-        - **Age**: {age}  
-        - **Occupation**: {occupation} 
-        - **BMI Category**: {bmi_category}
-        - **High Blood Pressure**: {bp_high} mmHg  
-        - **Low Blood Pressure**: {bp_low} mmHg  
-        - **Sleep Quality**: {quality_of_sleep}  
-        - **Sleep Duration**: {sleep_duration} hrs  
-        """)
+        col1, col2, col3 = st.columns([1, 4, 1])
 
-        insomnia_prob, apnea_prob = predict_disorders(
-            age, sleep_duration, quality_of_sleep, bp_high, bp_low,
-            occupation, bmi_category, label_encoders
-        )
+        with col2:
+            st.success("Got your information! Here's what you shared:")
+            st.markdown(f"""
+            - **Age**: {age}  
+            - **Occupation**: {occupation} 
+            - **BMI Category**: {bmi_category}
+            - **High Blood Pressure**: {bp_high} mmHg  
+            - **Low Blood Pressure**: {bp_low} mmHg  
+            - **Sleep Quality**: {quality_of_sleep}  
+            - **Sleep Duration**: {sleep_duration} hrs  
+            """)
 
-        st.subheader("Sleep Disorder Risk Prediction")
-        st.info(f"**Insomnia Risk:** {insomnia_prob:.2f}%")
-        st.info(f"**Sleep Apnea Risk:** {apnea_prob:.2f}%")
+            insomnia_prob, apnea_prob = predict_disorders(
+                age, sleep_duration, quality_of_sleep, bp_high, bp_low,
+                occupation, bmi_category, label_encoders
+            )
+
+            st.subheader("Sleep Disorder Risk Prediction")
+            st.info(f"**Insomnia Risk:** {insomnia_prob:.2f}%")
+            st.info(f"**Sleep Apnea Risk:** {apnea_prob:.2f}%")
 
 # tabs for navigation
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
