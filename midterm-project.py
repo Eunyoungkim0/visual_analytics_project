@@ -10,6 +10,7 @@ import openai
 from sklearn.preprocessing import LabelEncoder
 
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error, explained_variance_score, median_absolute_error
 from statsmodels.stats.stattools import durbin_watson
@@ -49,12 +50,12 @@ def load_data():
     mask = df['Occupation'].isin(low_occ)
     df.loc[mask, 'Occupation'] = 'Other'
 
-    return df
+    return df, df.copy()
 
 st.title('Sleep Health and Lifestyle Visual Analysis')
 
 # load the data
-df = load_data()
+df, df_model = load_data()
 
 numeric_cols = [
     'Sleep Duration', 'Quality of Sleep', 'Physical Activity Level',
@@ -66,6 +67,26 @@ order_dict = {"BMI Category": ["Normal", "Overweight", "Obese"],
                 "Sleep Disorder": ["None", "Sleep Apnea", "Insomnia"]}
 df_encoded = pd.get_dummies(df, columns=['Gender', 'Occupation', 'BMI Category', 'Sleep Disorder'])
 corr_matrix = df_encoded.corr()
+
+selected_features = ["BMI Category", "Occupation", "Blood Pressure_high", "Blood Pressure_low", "Sleep Duration", "Quality of Sleep", "Age"]
+
+model_encoders = {}
+for col in ["Occupation", "BMI Category"]:
+    le = LabelEncoder()
+    df_model[col] = le.fit_transform(df_model[col])
+    model_encoders[col] = le
+
+y_insomnia = df_model["Sleep Disorder"].apply(lambda x: 1 if x == "Insomnia" else 0)
+y_apnea = df_model["Sleep Disorder"].apply(lambda x: 1 if x == "Sleep Apnea" else 0)
+
+X = df_model[selected_features]
+
+X_train_ins, _, y_train_ins, _ = train_test_split(X, y_insomnia, test_size=0.2, stratify=y_insomnia, random_state=42)
+X_train_apn, _, y_train_apn, _ = train_test_split(X, y_apnea, test_size=0.2, stratify=y_apnea, random_state=42)
+
+knn_insomnia = KNeighborsClassifier(n_neighbors=10).fit(X_train_ins, y_train_ins)
+knn_apnea = KNeighborsClassifier(n_neighbors=12).fit(X_train_apn, y_train_apn)
+
 
 def categorize_sleep_duration(x, bins):
     return pd.cut([x], bins=bins, labels=[f"{b.left:.1f}-{b.right:.1f}" for b in bins[:-1]], include_lowest=True)[0]
@@ -424,60 +445,74 @@ def linear_regression_analysis():
             })
             st.table(metrics_df)
 
+def predict_disorders(age, sleep_duration, quality_of_sleep, bp_high, bp_low, occupation, bmi_category, label_encoders):
+    
+    input_df = pd.DataFrame([{
+        "Age": age,
+        "Sleep Duration": sleep_duration,
+        "Quality of Sleep": quality_of_sleep,
+        "Blood Pressure_high": bp_high,
+        "Blood Pressure_low": bp_low,
+        "Occupation": label_encoders["Occupation"].transform([occupation])[0],
+        "BMI Category": label_encoders["BMI Category"].transform([bmi_category])[0]
+    }])[selected_features]
+    
+    insomnia_prob = knn_insomnia.predict_proba(input_df)[0][1] * 100
+    apnea_prob = knn_apnea.predict_proba(input_df)[0][1] * 100
+
+    return insomnia_prob, apnea_prob
+
+
 def check_your_health():
     st.write("## Check your health")
     st.write("Want to get a friendly prediction of your health? Just fill in your info below!")
 
-    categorical_cols_2 = ['Gender', 'Occupation', 'BMI Category', 'Sleep Disorder']
+    # categorical_cols = ['Gender', 'Occupation', 'BMI Category', 'Sleep Disorder']
+    # label_encoders = {}
+
+    # for col in categorical_cols:
+    #     le = LabelEncoder()
+    #     le.fit(df[col])
+    #     label_encoders[col] = le
+    #     df[col] = le.transform(df[col]) 
+
     label_encoders = {}
-
-    for col in categorical_cols_2:
+    for col in ["Occupation", "BMI Category"]:
         le = LabelEncoder()
-        le.fit(df[col])
+        le.fit(df[col])  
         label_encoders[col] = le
-        df[col] = le.transform(df[col])
-
-    for col in categorical_cols_2:
-        encoded_values = df[col].unique()
-        decoded_values = label_encoders[col].inverse_transform(encoded_values)
 
     with st.form("health_form"):
-        age = st.number_input("🎂 How old are you?", min_value=0, max_value=120, value=0)
-        gender = st.selectbox("🧑‍⚕️ What is your gender?", label_encoders['Gender'].classes_)
-        occupation = st.selectbox("💼 What best describes your occupation?", label_encoders['Occupation'].classes_)
-        stress_level = st.slider("👉 How stressed do you feel? (1 = Not at all, 10 = Extremely stressed)", 1, 10, 1)
-        bp_high = st.number_input("🔴 What is your typical *high* blood pressure? (e.g., 120)", min_value=80, max_value=200, value=80)
-        bp_low = st.number_input("🔵 What is your typical *low* blood pressure? (e.g., 80)", min_value=40, max_value=120, value=40)
-        quality_of_sleep = st.slider("💤 How would you rate your sleep quality? (1 = Very poor, 10 = Excellent)", 1, 10, 1)
-        sleep_duration = st.number_input("🕒 On average, how many hours do you sleep per night?", min_value=0.0, max_value=24.0, value=0.0, step=0.5)
-        heart_rate = st.number_input("❤️ What's your resting heart rate? (e.g., 72 bpm)", min_value=40, max_value=200, value=40)
-        activity_level = st.number_input(
-            "🏋️‍♂️ On average, how many minutes do you exercise per day?",
-            min_value=0,
-            max_value=400,
-            value=0,
-            step=5,
-            help="Include walking, workouts, or any physical activities."
-        )
-        daily_steps = st.number_input("👟 On average, how many steps do you take each day?", min_value=0, max_value=50000, value=0, step=500)
+        age = st.number_input("How old are you?", min_value=0, max_value=120, value=25)
+        occupation = st.selectbox("What best describes your occupation?", label_encoders['Occupation'].classes_)
+        bmi_category = st.selectbox("What is your BMI category?", label_encoders['BMI Category'].classes_)
+        bp_high = st.number_input("What is your typical *high* blood pressure?", min_value=80, max_value=200, value=120)
+        bp_low = st.number_input("What is your typical *low* blood pressure?", min_value=40, max_value=120, value=80)
+        quality_of_sleep = st.slider("How would you rate your sleep quality? (1 = Very poor, 10 = Excellent)", 1, 10, 7)
+        sleep_duration = st.number_input("On average, how many hours do you sleep per night?", min_value=0.0, max_value=24.0, value=7.0, step=0.5)
 
         submitted = st.form_submit_button("Check Results")
 
     if submitted:
-        st.success("✅ Got your information! Here's what you shared:")
+        st.success("Got your information! Here's what you shared:")
         st.markdown(f"""
-        - **Age**: {age} years old  
-        - **Gender**: {gender}  
-        - **Occupation**: {occupation}  
-        - **Stress Level**: {stress_level} (1-10)  
+        - **Age**: {age}  
+        - **Occupation**: {occupation} 
+        - **BMI Category**: {bmi_category}
         - **High Blood Pressure**: {bp_high} mmHg  
         - **Low Blood Pressure**: {bp_low} mmHg  
-        - **Sleep Quality**: {quality_of_sleep} (1-10)  
-        - **Sleep Duration**: {sleep_duration} hours  
-        - **Heart Rate**: {heart_rate} bpm  
-        - **Physical Activity Level**: {activity_level} minutes per day  
-        - **Daily Steps**: {daily_steps} steps  
+        - **Sleep Quality**: {quality_of_sleep}  
+        - **Sleep Duration**: {sleep_duration} hrs  
         """)
+
+        insomnia_prob, apnea_prob = predict_disorders(
+            age, sleep_duration, quality_of_sleep, bp_high, bp_low,
+            occupation, bmi_category, label_encoders
+        )
+
+        st.subheader("Sleep Disorder Risk Prediction")
+        st.info(f"**Insomnia Risk:** {insomnia_prob:.2f}%")
+        st.info(f"**Sleep Apnea Risk:** {apnea_prob:.2f}%")
 
 # tabs for navigation
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
