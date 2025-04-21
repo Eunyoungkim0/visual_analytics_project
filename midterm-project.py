@@ -311,10 +311,11 @@ def check_correlation_by_variable():
 
     st.write(f"### Filtered Correlation Matrix (|corr| ≥ {threshold})")
 
-    col1, col2 = st.columns([2, 1]) 
+    col1, col2, col3 = st.columns([1, 4, 1])
 
-    with col1:
-        fig, ax = plt.subplots(figsize=(7, 5))
+    with col2:
+
+        fig, ax = plt.subplots(figsize=(8, 5))
         fig.patch.set_facecolor('#e8e8e8')
         sns.heatmap(filtered_corr, annot=True, cmap='viridis', fmt=".2f", annot_kws={"size": 6}, ax=ax, 
                 linewidths=0.5, linecolor='gray', mask=filtered_corr.isna())
@@ -323,36 +324,39 @@ def check_correlation_by_variable():
         cbar.ax.tick_params(labelsize=6)
         st.pyplot(fig)
 
-    
-    with col2:
-        stacked = filtered_corr.stack()
-        stacked = stacked[stacked.index.get_level_values(0) != stacked.index.get_level_values(1)]
-        stacked.index = stacked.index.map(lambda x: tuple(sorted(x)))
-        stacked = stacked[~stacked.index.duplicated(keep='first')]
+    stacked = filtered_corr.stack()
+    stacked = stacked[stacked.index.get_level_values(0) != stacked.index.get_level_values(1)]
+    stacked.index = stacked.index.map(lambda x: tuple(sorted(x)))
+    stacked = stacked[~stacked.index.duplicated(keep='first')]
 
-        corr_pairs_df = stacked.reset_index()
-        corr_pairs_df.columns = ['Variable 1', 'Variable 2', 'Correlation']
+    corr_pairs_df = stacked.reset_index()
+    corr_pairs_df.columns = ['Variable 1', 'Variable 2', 'Correlation']
 
-        corr_pairs_df['Abs Corr'] = corr_pairs_df['Correlation'].abs()
-        corr_pairs_df = corr_pairs_df.sort_values(by='Abs Corr', ascending=False).drop(columns='Abs Corr')
-        starts_with = lambda col, prefix: corr_pairs_df[col].str.startswith(prefix)
+    corr_pairs_df['Abs Corr'] = corr_pairs_df['Correlation'].abs()
+    corr_pairs_df = corr_pairs_df.sort_values(by='Abs Corr', ascending=False).drop(columns='Abs Corr')
+    starts_with = lambda col, prefix: corr_pairs_df[col].str.startswith(prefix)
 
-        mask = (
-            (starts_with('Variable 1', 'Gender_') & starts_with('Variable 2', 'Gender_')) |
-            ((corr_pairs_df['Variable 1'] == 'Age') & starts_with('Variable 2', 'Gender_')) |
-            (starts_with('Variable 1', 'Blood Pressure_') & starts_with('Variable 2', 'Blood Pressure_')) |
-            (starts_with('Variable 1', 'BMI Category_') & starts_with('Variable 2', 'BMI Category_')) |
-            (starts_with('Variable 1', 'Occupation_') & starts_with('Variable 2', 'Occupation_')) |
-            ((corr_pairs_df['Variable 1'].eq('Age') | starts_with('Variable 1', 'Gender_')) &
-            starts_with('Variable 2', 'Occupation_'))
-        )
+    mask = (
+        (starts_with('Variable 1', 'Gender_') & starts_with('Variable 2', 'Gender_')) |
+        ((corr_pairs_df['Variable 1'] == 'Age') & starts_with('Variable 2', 'Gender_')) |
+        (starts_with('Variable 1', 'Blood Pressure_') & starts_with('Variable 2', 'Blood Pressure_')) |
+        (starts_with('Variable 1', 'BMI Category_') & starts_with('Variable 2', 'BMI Category_')) |
+        (starts_with('Variable 1', 'Occupation_') & starts_with('Variable 2', 'Occupation_')) |
+        ((corr_pairs_df['Variable 1'].eq('Age') | starts_with('Variable 1', 'Gender_')) &
+        starts_with('Variable 2', 'Occupation_'))
+    )
 
-        filtered_corr_pairs_df = corr_pairs_df[~mask].reset_index(drop=True)
-        # st.table(corr_pairs_df.reset_index(drop=True))
+    filtered_corr_pairs_df = corr_pairs_df[~mask].reset_index(drop=True)
+    # st.table(corr_pairs_df.reset_index(drop=True))
 
+    corr_md = filtered_corr_pairs_df.to_markdown(index=False)
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
         if st.button("Generate Detailed Explanation"):
             # Convert data to Markdown for prompt
-            corr_md = filtered_corr_pairs_df.to_markdown(index=False)
+            # corr_md = filtered_corr_pairs_df.to_markdown(index=False)
 
             prompt = f"""The table below shows the correlation between Variable 1 and Variable 2:\n\n{corr_md}\n\n
             Please provide a brief and clear interpretation of these results.
@@ -365,9 +369,8 @@ def check_correlation_by_variable():
                 messages=[{"role": "user", "content": prompt}]
             )
             st.write(response.choices[0].message.content)
-
-            st.write(corr_md)
-
+    with col2:
+        st.write(corr_md)
 
 def linear_regression_analysis():
     st.write("## Linear Regression Analysis")
