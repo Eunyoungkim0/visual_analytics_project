@@ -9,3 +9,4 @@ scikit-learn
 statsmodels
 openai
 python-dotenv
+tabulate
